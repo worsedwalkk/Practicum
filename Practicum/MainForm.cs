@@ -12,17 +12,25 @@ namespace Practicum
 {
     public partial class MainForm : Form
     {
-        private string connectionString = @"Data Source=DESKTOP-BFCMD50\SQLEXPRESS;Initial Catalog=SchoolDB;Integrated Security=True";
+        
         public MainForm()
         {
             InitializeComponent();
         }
 
+        //Открытие новой формы
         private void guna2Button1_Click(object sender, EventArgs e)
         {
-            LoginForm lgnform = new LoginForm();
-            lgnform.Show();
+            LoginForm lgnfrm = new LoginForm();
+            lgnfrm.Show();
             this.Hide();
+            lgnfrm.FormClosed += (s, args) => this.Close();
+        }
+        //Вывов диалогового окна
+        private void linkLabel1_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            CustomMessageBoxForm msgBox = new CustomMessageBoxForm();
+            msgBox.ShowDialog();
         }
     }
 }

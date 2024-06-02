@@ -1,11 +1,7 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.Data.SqlClient;
 using System.Drawing;
-using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -21,26 +17,39 @@ namespace Practicum
         {
             InitializeComponent();
             this.studentId = studentId;
-            LoadGroupsAsync();
+            SetupDataGridView();
+            if (this.studentId <= 0)
+            {
+                MessageBox.Show("Неправильный ID студента.");
+                this.Close();
+                return;
+            }
+            LoadDisciplinesAsync();
         }
-        private async void LoadGroupsAsync()
+
+        private void SetupDataGridView()
+        {
+            // Устанавливаем шрифт для ячеек и заголовков
+            dgvAssignments.DefaultCellStyle.Font = new Font("Century Gothic", 12, FontStyle.Bold);
+            dgvAssignments.ColumnHeadersDefaultCellStyle.Font = new Font("Century Gothic", 12, FontStyle.Bold);
+        }
+        // Загружаем дисциплины
+        private async void LoadDisciplinesAsync()
         {
             try
             {
                 groupId = await GetStudentGroupIdAsync(studentId);
-                var groups = await GetGroupsAsync();
-                cbGroups.DataSource = groups;
-                cbGroups.DisplayMember = "GroupName";
-                cbGroups.ValueMember = "GroupID";
-                cbGroups.SelectedValue = groupId;
-                LoadDisciplinesAsync();
+                var disciplines = await GetDisciplinesAsync(groupId);
+                cbDisciplines.DataSource = disciplines;
+                cbDisciplines.DisplayMember = "DisciplineName";
+                cbDisciplines.ValueMember = "DisciplineID";
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error loading groups: " + ex.Message);
+                MessageBox.Show("Ошибка загрузки дисциплин: " + ex.Message);
             }
         }
-
+        // Получаем группу студента
         private async Task<int> GetStudentGroupIdAsync(int studentId)
         {
             using (SqlConnection connection = new SqlConnection(connectionString))
@@ -48,49 +57,28 @@ namespace Practicum
                 string query = "SELECT GroupID FROM Students WHERE StudentID = @StudentID";
                 SqlCommand cmd = new SqlCommand(query, connection);
                 cmd.Parameters.AddWithValue("@StudentID", studentId);
+
                 await connection.OpenAsync();
-                return (int)await cmd.ExecuteScalarAsync();
+                object result = await cmd.ExecuteScalarAsync();
+
+                if (result == null || result == DBNull.Value)
+                {
+                    MessageBox.Show($"Группа не найдена для студента с ID: {studentId}");
+                    throw new Exception("Group not found");
+                }
+
+                int groupId = (int)result;
+                return groupId;
             }
         }
-
-        private async Task<DataTable> GetGroupsAsync()
-        {
-            using (SqlConnection connection = new SqlConnection(connectionString))
-            {
-                string query = "SELECT GroupID, GroupName FROM Groups";
-                SqlDataAdapter adapter = new SqlDataAdapter(query, connection);
-                DataTable dt = new DataTable();
-                await connection.OpenAsync();
-                adapter.Fill(dt);
-                return dt;
-            }
-        }
-
-        private async void LoadDisciplinesAsync()
-        {
-            try
-            {
-                var disciplines = await GetDisciplinesAsync(groupId);
-                cbDisciplines.DataSource = disciplines;
-                cbDisciplines.DisplayMember = "DisciplineName";
-                cbDisciplines.ValueMember = "DisciplineID";
-                LoadAssignmentsAsync(); // Ensure assignments load initially
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Error loading disciplines: " + ex.Message);
-            }
-        }
-
+        // Отображение информации
         private async Task<DataTable> GetDisciplinesAsync(int groupId)
         {
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
-                string query = @"
-                SELECT d.DisciplineID, d.DisciplineName
-                FROM Disciplines d
-                INNER JOIN Assignments a ON d.DisciplineID = a.DisciplineID
-                WHERE a.GroupID = @GroupID";
+                string query = "SELECT d.DisciplineID, d.DisciplineName FROM Disciplines d " +
+                               "INNER JOIN Assignments a ON d.DisciplineID = a.DisciplineID " +
+                               "WHERE a.GroupID = @GroupID";
                 SqlCommand cmd = new SqlCommand(query, connection);
                 cmd.Parameters.AddWithValue("@GroupID", groupId);
                 SqlDataAdapter adapter = new SqlDataAdapter(cmd);
@@ -100,33 +88,65 @@ namespace Practicum
                 return dt;
             }
         }
-
+        // Загрузка работ 
         private async void LoadAssignmentsAsync()
         {
             if (cbDisciplines.SelectedValue == null)
                 return;
 
-            int disciplineId = Convert.ToInt32(cbDisciplines.SelectedValue);
+            int disciplineId;
+
+            // Проверяем, является ли SelectedValue объектом DataRowView
+            if (cbDisciplines.SelectedValue is DataRowView rowView)
+            {
+                disciplineId = Convert.ToInt32(rowView["DisciplineID"]);
+            }
+            else
+            {
+                // Если SelectedValue не является DataRowView, попробуем выполнить прямое преобразование
+                if (!int.TryParse(cbDisciplines.SelectedValue.ToString(), out disciplineId))
+                {
+                    MessageBox.Show("Не удалось определить дисциплину.");
+                    return;
+                }
+            }
 
             try
             {
                 var assignments = await GetAssignmentsAsync(disciplineId, groupId);
                 dgvAssignments.DataSource = assignments;
-
-                // Ensure columns are auto-generated
-                dgvAssignments.AutoGenerateColumns = true;
+                SetColumnHeaders();
+                dgvAssignments.Refresh();
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error loading assignments: " + ex.Message);
+                MessageBox.Show("Ошибка загрузки работ: " + ex.Message);
             }
+        }
+        // Устанавливаем названия для ячеек и заголовков
+        private void SetColumnHeaders()
+        {
+            if (dgvAssignments.Columns["AssignmentID"] != null)
+                dgvAssignments.Columns["AssignmentID"].HeaderText = "ID задания";
+            if (dgvAssignments.Columns["DisciplineName"] != null)
+                dgvAssignments.Columns["DisciplineName"].HeaderText = "Название дисциплины";
+            if (dgvAssignments.Columns["GroupName"] != null)
+                dgvAssignments.Columns["GroupName"].HeaderText = "Название группы";
+            if (dgvAssignments.Columns["FilePath"] != null)
+                dgvAssignments.Columns["FilePath"].HeaderText = "Работа";
+            if (dgvAssignments.Columns["DateAdded"] != null)
+                dgvAssignments.Columns["DateAdded"].HeaderText = "Дата добавления";
         }
 
         private async Task<DataTable> GetAssignmentsAsync(int disciplineId, int groupId)
         {
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
-                string query = "SELECT * FROM Assignments WHERE DisciplineID = @DisciplineID AND GroupID = @GroupID";
+                string query = "SELECT a.AssignmentID, d.DisciplineName, g.GroupName, a.FilePath, a.DateAdded " +
+                               "FROM Assignments a " +
+                               "INNER JOIN Disciplines d ON a.DisciplineID = d.DisciplineID " +
+                               "INNER JOIN Groups g ON a.GroupID = g.GroupID " +
+                               "WHERE a.DisciplineID = @DisciplineID AND a.GroupID = @GroupID";
                 SqlCommand cmd = new SqlCommand(query, connection);
                 cmd.Parameters.AddWithValue("@DisciplineID", disciplineId);
                 cmd.Parameters.AddWithValue("@GroupID", groupId);
@@ -138,55 +158,31 @@ namespace Practicum
             }
         }
 
-        private void cbGroups_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            if (cbGroups.SelectedValue != null && int.TryParse(cbGroups.SelectedValue.ToString(), out groupId))
-            {
-                LoadDisciplinesAsync();
-            }
-        }
-
-        private void cbDisciplines_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            LoadAssignmentsAsync();
-        }
-
-        private void btnDownloadAssignment_Click(object sender, EventArgs e)
-        {
-            if (dgvAssignments.SelectedRows.Count > 0)
-            {
-                string filePath = dgvAssignments.SelectedRows[0].Cells["FilePath"].Value.ToString();
-                System.Diagnostics.Process.Start(filePath);
-            }
-        }
-
         private async void btnUploadReport_Click(object sender, EventArgs e)
         {
             if (dgvAssignments.SelectedRows.Count == 0)
             {
-                MessageBox.Show("Please select an assignment.");
+                MessageBox.Show("Пожалуйста выберите файл.");
                 return;
             }
 
-            OpenFileDialog openFileDialog = new OpenFileDialog
-            {
-                Filter = "PDF Files|*.pdf"
-            };
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            openFileDialog.Filter = "PDF Files|*.pdf";
 
             if (openFileDialog.ShowDialog() == DialogResult.OK)
             {
                 string filePath = openFileDialog.FileName;
-                int assignmentId = Convert.ToInt32(dgvAssignments.SelectedRows[0].Cells["AssignmentID"].Value);
+                int assignmentId = (int)dgvAssignments.SelectedRows[0].Cells["AssignmentID"].Value;
                 DateTime dateUploaded = DateTime.Now;
 
                 try
                 {
                     await UploadReportAsync(studentId, assignmentId, filePath, dateUploaded);
-                    MessageBox.Show("Report uploaded successfully.");
+                    MessageBox.Show("Работа добавлена.");
                 }
                 catch (Exception ex)
                 {
-                    MessageBox.Show("Error uploading report: " + ex.Message);
+                    MessageBox.Show("Ошибка загрузки работы: " + ex.Message);
                 }
             }
         }
@@ -205,6 +201,20 @@ namespace Practicum
                 await connection.OpenAsync();
                 await cmd.ExecuteNonQueryAsync();
             }
+        }
+
+        private void dgvAssignments_CellContentDoubleClick(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex >= 0 && e.RowIndex < dgvAssignments.Rows.Count)
+            {
+                string filePath = dgvAssignments.Rows[e.RowIndex].Cells["FilePath"].Value.ToString();
+                System.Diagnostics.Process.Start(filePath);
+            }
+        }
+
+        private void cbDisciplines_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            LoadAssignmentsAsync();
         }
     }
 }

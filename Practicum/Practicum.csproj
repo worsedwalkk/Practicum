@@ -33,13 +33,15 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Guna.UI2">
-      <HintPath>..\..\Guna_UI_Framework_Ultimate_v2.0.0.1\Guna.UI-Framework-Lib-master\Guna.UI2 WinForms\.net 4.0\Guna.UI2.dll</HintPath>
+    <Reference Include="Guna.UI2, Version=2.0.4.6, Culture=neutral, PublicKeyToken=8b9d14aa5142e261, processorArchitecture=MSIL">
+      <HintPath>..\packages\Guna.UI2.WinForms.2.0.4.6\lib\net472\Guna.UI2.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.VisualBasic" />
     <Reference Include="System" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Design" />
     <Reference Include="System.Management" />
+    <Reference Include="System.Web" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -68,6 +70,12 @@
     </Compile>
     <Compile Include="AddGroupForm.Designer.cs">
       <DependentUpon>AddGroupForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="CustomMessageBoxForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="CustomMessageBoxForm.Designer.cs">
+      <DependentUpon>CustomMessageBoxForm.cs</DependentUpon>
     </Compile>
     <Compile Include="LoginForm.cs">
       <SubType>Form</SubType>
@@ -116,6 +124,9 @@
     <EmbeddedResource Include="AddGroupForm.resx">
       <DependentUpon>AddGroupForm.cs</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="CustomMessageBoxForm.resx">
+      <DependentUpon>CustomMessageBoxForm.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="LoginForm.resx">
       <DependentUpon>LoginForm.cs</DependentUpon>
     </EmbeddedResource>
@@ -130,6 +141,7 @@
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DependentUpon>Resources.resx</DependentUpon>
+      <DesignTime>True</DesignTime>
     </Compile>
     <EmbeddedResource Include="RegistrationForm.resx">
       <DependentUpon>RegistrationForm.cs</DependentUpon>
@@ -143,6 +155,7 @@
     <EmbeddedResource Include="ViewReportsForm.resx">
       <DependentUpon>ViewReportsForm.cs</DependentUpon>
     </EmbeddedResource>
+    <None Include="packages.config" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -155,6 +168,48 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\189271609765514.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\27953896238651.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\v882-kul-58-a.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\1679542858_bogatyr-club-p-chernii-shershavii-fon-pinterest-44.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\3f0vzb2nd26itilex8fakx3ep53wtpnc.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\monochrome-abstract-sphere-symmetry-pattern-geometry-circle-shape-design-line-black-and-white-spider-web-184511.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\back_icon-icons.com_65134.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\back_arrow_14447.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\BestHDWallpapersPack.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\back_icon-icons.com_62806.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\back_white_button_icon_227869.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\1614432736_88-p-dizain-na-temnom-fone-112.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\ed36715f1b283440260dc5d17b254e7164849929.jpg" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Resources\android-1440x1280-wallpaper_02443.jpg" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

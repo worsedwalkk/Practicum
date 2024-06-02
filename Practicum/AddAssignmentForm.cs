@@ -15,6 +15,9 @@ namespace Practicum
     {
         private string connectionString = @"Data Source=DESKTOP-BFCMD50\SQLEXPRESS;Initial Catalog=SchoolDB;Integrated Security=True";
         private int teacherId;
+
+        public event EventHandler AssignmentAdded;
+
         public AddAssignmentForm(int teacherId)
         {
             InitializeComponent();
@@ -33,7 +36,7 @@ namespace Practicum
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error loading disciplines: " + ex.Message);
+                MessageBox.Show("Ошибка загрузки дисциплин: " + ex.Message);
             }
         }
 
@@ -48,7 +51,7 @@ namespace Practicum
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error loading groups: " + ex.Message);
+                MessageBox.Show("Ошибка загрузки групп: " + ex.Message);
             }
         }
 
@@ -93,26 +96,35 @@ namespace Practicum
 
         private async void btnAddAssignment_Click(object sender, EventArgs e)
         {
-            if (cbDisciplines.SelectedValue == null || cbGroups.SelectedValue == null || string.IsNullOrWhiteSpace(txtFilePath.Text))
+            string filePath = txtFilePath.Text.Trim();
+            if (cbDisciplines.SelectedValue == null || cbGroups.SelectedValue == null || string.IsNullOrWhiteSpace(filePath))
             {
-                MessageBox.Show("Please select discipline, group, and file.");
+                MessageBox.Show("Пожалуйста выберите: группу, дисциплину и файл.");
+                return;
+            }
+
+            // Проверка оригинальности загруженного файла
+            if (!IsUniqueFilePath(filePath))
+            {
+                MessageBox.Show("Такой файл уже загружен.");
                 return;
             }
 
             int disciplineId = (int)cbDisciplines.SelectedValue;
             int groupId = (int)cbGroups.SelectedValue;
-            string filePath = txtFilePath.Text;
             DateTime dateAdded = DateTime.Now;
 
             try
             {
                 await AddAssignmentAsync(disciplineId, groupId, filePath, dateAdded);
-                MessageBox.Show("Assignment added successfully.");
+                MessageBox.Show("Работа успешно добавлена.");
+                // Вызов события после успешного добавления работы
+                AssignmentAdded?.Invoke(this, EventArgs.Empty);
                 this.Close();
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error adding assignment: " + ex.Message);
+                MessageBox.Show("Ошибка загрузки работы: " + ex.Message);
             }
         }
 
@@ -129,6 +141,20 @@ namespace Practicum
 
                 await connection.OpenAsync();
                 await cmd.ExecuteNonQueryAsync();
+            }
+        }
+
+        private bool IsUniqueFilePath(string filePath)
+        {
+            using (SqlConnection connection = new SqlConnection(connectionString))
+            {
+                string query = "SELECT COUNT(*) FROM Assignments WHERE FilePath = @FilePath";
+                SqlCommand cmd = new SqlCommand(query, connection);
+                cmd.Parameters.AddWithValue("@FilePath", filePath);
+
+                connection.Open();
+                int count = (int)cmd.ExecuteScalar();
+                return count == 0;
             }
         }
     }

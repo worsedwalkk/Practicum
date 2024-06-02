@@ -23,37 +23,90 @@ namespace Practicum
 
         private async void btnAddDiscipline_Click(object sender, EventArgs e)
         {
-            string disciplineName = txtDisciplineName.Text;
+            string disciplineName = txtDisciplineName.Text.Trim();
+
+            // Проверка заполненности поля
             if (string.IsNullOrWhiteSpace(disciplineName))
             {
-                MessageBox.Show("Пожалуйста введите название дисциплины!");
+                MessageBox.Show("Введите название дисциплины.");
+                return;
+            }
+
+            // Проверка оригинальности введенных данных
+            if (!IsUniqueDisciplineName(disciplineName))
+            {
+                MessageBox.Show("Такая дисциплина уже существует.");
                 return;
             }
 
             try
             {
-                await AddDisciplineAsync(disciplineName, teacherId);
+                await AddDisciplineAsync(teacherId, disciplineName);
                 MessageBox.Show("Дисциплина успешно добавлена.");
                 this.Close();
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Ошибки добавления дисциплины: " + ex.Message);
+                MessageBox.Show("Ошибка загрузки: " + ex.Message);
             }
         }
 
-        private async Task AddDisciplineAsync(string disciplineName, int teacherId)
+        private async Task AddDisciplineAsync(int teacherId, string disciplineName)
+        {
+            try
+            {
+                using (SqlConnection connection = new SqlConnection(connectionString))
+                {
+                    // Проверяем, существует ли TeacherID в таблице Teachers
+                    string checkTeacherQuery = "SELECT COUNT(*) FROM Teachers WHERE TeacherID = @TeacherID";
+                    SqlCommand checkTeacherCmd = new SqlCommand(checkTeacherQuery, connection);
+                    checkTeacherCmd.Parameters.AddWithValue("@TeacherID", teacherId);
+
+                    await connection.OpenAsync();
+
+                    // Отладочное сообщение для проверки teacherId
+                    MessageBox.Show("Проверка TeacherID: " + teacherId);
+
+                    int teacherExists = (int)await checkTeacherCmd.ExecuteScalarAsync();
+
+                    // Отладочное сообщение для проверки результата запроса
+                    MessageBox.Show("Результат проверки TeacherID: " + teacherExists);
+
+                    if (teacherExists == 0)
+                    {
+                        MessageBox.Show("Указанный TeacherID не существует. Пожалуйста, проверьте данные и повторите попытку.");
+                        return;
+                    }
+
+                    // Если TeacherID существует, добавляем запись в таблицу Disciplines
+                    string insertQuery = "INSERT INTO Disciplines (TeacherID, DisciplineName) VALUES (@TeacherID, @DisciplineName)";
+                    SqlCommand insertCmd = new SqlCommand(insertQuery, connection);
+                    insertCmd.Parameters.AddWithValue("@TeacherID", teacherId);
+                    insertCmd.Parameters.AddWithValue("@DisciplineName", disciplineName);
+
+                    await insertCmd.ExecuteNonQueryAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Ошибка при добавлении дисциплины: " + ex.Message);
+            }
+        }
+
+        private bool IsUniqueDisciplineName(string disciplineName)
         {
             using (SqlConnection connection = new SqlConnection(connectionString))
             {
-                string query = "INSERT INTO Disciplines (DisciplineName, TeacherID) VALUES (@DisciplineName, @TeacherID)";
+                string query = "SELECT COUNT(*) FROM Disciplines WHERE DisciplineName = @DisciplineName";
                 SqlCommand cmd = new SqlCommand(query, connection);
                 cmd.Parameters.AddWithValue("@DisciplineName", disciplineName);
-                cmd.Parameters.AddWithValue("@TeacherID", teacherId);
 
-                await connection.OpenAsync();
-                await cmd.ExecuteNonQueryAsync();
+                connection.Open();
+                int count = (int)cmd.ExecuteScalar();
+                return count == 0;
             }
         }
+
+
     }
 }
